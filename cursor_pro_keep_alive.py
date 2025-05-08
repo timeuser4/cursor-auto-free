@@ -11,6 +11,7 @@ import go_cursor_help
 import patch_cursor_get_machine_id
 from reset_machine import MachineIDResetter
 from language import language, get_translation
+from data_manager import DatabaseManager
 
 os.environ["PYTHONVERBOSE"] = "0"
 os.environ["PYINSTALLER_VERBOSE"] = "0"
@@ -414,34 +415,15 @@ if __name__ == "__main__":
     print("\n")
     language.select_language_prompt()
     
-    greater_than_0_45 = check_cursor_version()
     browser_manager = None
+    db = DatabaseManager()
+    account_counts = db.size()
+    
     try:
-        logging.info(get_translation("initializing_program"))
-        ExitCursor()
-
-        # Prompt user to select operation mode
-        print(get_translation("select_operation_mode"))
-        print(get_translation("reset_machine_code_only"))
-        print(get_translation("complete_registration"))
-
-        while True:
-            try:
-                choice = int(input(get_translation("enter_option")).strip())
-                if choice in [1, 2]:
-                    break
-                else:
-                    print(get_translation("invalid_option"))
-            except ValueError:
-                print(get_translation("enter_valid_number"))
-
-        if choice == 1:
-            # Only reset machine code
-            reset_machine_id(greater_than_0_45)
-            logging.info(get_translation("machine_code_reset_complete"))
-            print_end_message()
-            sys.exit(0)
-
+        logging.info(get_translation("initializing_database"))
+        db = DatabaseManager()
+        account_counts = db.size()
+        
         logging.info(get_translation("initializing_browser"))
 
         # Get user_agent
@@ -459,58 +441,59 @@ if __name__ == "__main__":
         # Get and print browser's user-agent
         user_agent = browser.latest_tab.run_js("return navigator.userAgent")
 
-        logging.info(
-            "Please visit the open source project for more information: https://github.com/chengazhen/cursor-auto-free"
-        )
         logging.info(get_translation("configuration_info"))
         login_url = "https://authenticator.cursor.sh"
         sign_up_url = "https://authenticator.cursor.sh/sign-up"
         settings_url = "https://www.cursor.com/settings"
         mail_url = "https://tempmail.plus"
 
-        logging.info(get_translation("generating_random_account"))
+        while account_counts < 50:
+            try:
+                logging.info(get_translation("generating_random_account"))
 
-        email_generator = EmailGenerator()
-        first_name = email_generator.default_first_name
-        last_name = email_generator.default_last_name
-        account = email_generator.generate_email()
-        password = email_generator.default_password
+                email_generator = EmailGenerator()
+                first_name = email_generator.default_first_name
+                last_name = email_generator.default_last_name
+                account = email_generator.generate_email()
+                password = email_generator.default_password
 
-        logging.info(get_translation("generated_email_account", email=account))
+                logging.info(get_translation("generated_email_account", email=account))
 
-        logging.info(get_translation("initializing_email_verification"))
-        email_handler = EmailVerificationHandler(account)
+                logging.info(get_translation("initializing_email_verification"))
+                email_handler = EmailVerificationHandler(account)
 
-        auto_update_cursor_auth = True
+                tab = browser.latest_tab
 
-        tab = browser.latest_tab
+                tab.run_js("try { turnstile.reset() } catch(e) { }")
 
-        tab.run_js("try { turnstile.reset() } catch(e) { }")
+                logging.info(get_translation("starting_registration"))
+                logging.info(get_translation("visiting_login_page", url=login_url))
+                tab.get(login_url)
 
-        logging.info(get_translation("starting_registration"))
-        logging.info(get_translation("visiting_login_page", url=login_url))
-        tab.get(login_url)
+                if sign_up_account(browser, tab):
+                    # curosr注册自动化
+                    db.push(firstname=first_name, 
+                            lastname=last_name, 
+                            email=account, 
+                            account=account,
+                            password=password)
+                    
+                    # # cursor登陆自动化部分
+                    # logging.info(get_translation("getting_session_token"))
+                    # token = get_cursor_session_token(tab)
+                    # if token:
+                    #     logging.info(get_translation("updating_auth_info"))
+                    #     update_cursor_auth(
+                    #         email=account, access_token=token, refresh_token=token
+                    #     )
+                    # else:
+                    #     logging.error(get_translation("session_token_failed"))
 
-        if sign_up_account(browser, tab):
-            logging.info(get_translation("getting_session_token"))
-            token = get_cursor_session_token(tab)
-            if token:
-                logging.info(get_translation("updating_auth_info"))
-                update_cursor_auth(
-                    email=account, access_token=token, refresh_token=token
-                )
-                logging.info(
-                    "Please visit the open source project for more information: https://github.com/chengazhen/cursor-auto-free"
-                )
-                logging.info(get_translation("resetting_machine_code"))
-                reset_machine_id(greater_than_0_45)
-                logging.info(get_translation("all_operations_completed"))
-                print_end_message()
-            else:
-                logging.error(get_translation("session_token_failed"))
-
+            except Exception as e:
+                logging.error(get_translation("program_error", error=str(e)))
+                
     except Exception as e:
-        logging.error(get_translation("program_error", error=str(e)))
+        logging.error(get_translation("iinitialize_error", error=str(e)))
     finally:
         if browser_manager:
             browser_manager.quit()

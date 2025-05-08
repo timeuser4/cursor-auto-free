@@ -11,6 +11,7 @@ class Language:
                 "info": "ℹ️",
                 
                 # Main program flow messages
+                "initialize_error": "初始化失败{error}",
                 "initializing_program": "\n=== 初始化程序 ===",
                 "select_operation_mode": "\n请选择操作模式:",
                 "reset_machine_code_only": "1. 仅重置机器码",
