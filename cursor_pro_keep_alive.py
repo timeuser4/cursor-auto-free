@@ -320,18 +320,12 @@ def sign_up_account(browser, tab):
 class EmailGenerator:
     def __init__(
         self,
-        password="".join(
-            random.choices(
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*",
-                k=12,
-            )
-        ),
     ):
         configInstance = Config()
         configInstance.print_config()
         self.domain = configInstance.get_domain()
         self.names = self.load_names()
-        self.default_password = password
+        self.default_password = self.generate_random_password()
         self.default_first_name = self.generate_random_name()
         self.default_last_name = self.generate_random_name()
 
@@ -349,6 +343,12 @@ class EmailGenerator:
         """Generate a random username"""
         return random.choice(self.names)
 
+    def generate_random_password(self, length=12):
+        """Generate a random password"""
+        return "".join(random.choices(
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*",
+                k=12,
+            ))
     def generate_email(self, length=4):
         """Generate a random email address"""
         length = random.randint(0, length)  # Generate a random int between 0 and length
@@ -394,21 +394,7 @@ def reset_machine_id(greater_than_0_45):
     else:
         MachineIDResetter().reset_machine_ids()
 
-
-def print_end_message():
-    logging.info("\n\n\n\n\n")
-    logging.info("=" * 30)
-    logging.info(get_translation("all_operations_completed"))
-    logging.info("\n=== Get More Information ===")
-    logging.info("📺 Bilibili UP: 想回家的前端")
-    logging.info("🔥 WeChat Official Account: code 未来")
-    logging.info("=" * 30)
-    logging.info(
-        "Please visit the open source project for more information: https://github.com/chengazhen/cursor-auto-free"
-    )
-
-
-if __name__ == "__main__":
+def _main():
     print_logo()
     
     # Add language selection
@@ -417,19 +403,12 @@ if __name__ == "__main__":
     
     browser_manager = None
     db = DatabaseManager()
-    account_counts = db.size()
-    
     try:
-        logging.info(get_translation("initializing_database"))
-        db = DatabaseManager()
-        account_counts = db.size()
-        
-        logging.info(get_translation("initializing_browser"))
-
+        logging.info("初始化浏览器和数据库...")
         # Get user_agent
         user_agent = get_user_agent()
         if not user_agent:
-            logging.error(get_translation("get_user_agent_failed"))
+            logging.error("获取user agent失败，使用默认值")
             user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
         # Remove "HeadlessChrome" from user_agent
@@ -441,15 +420,15 @@ if __name__ == "__main__":
         # Get and print browser's user-agent
         user_agent = browser.latest_tab.run_js("return navigator.userAgent")
 
-        logging.info(get_translation("configuration_info"))
+        logging.info("=== 配置信息 ===")
         login_url = "https://authenticator.cursor.sh"
         sign_up_url = "https://authenticator.cursor.sh/sign-up"
         settings_url = "https://www.cursor.com/settings"
         mail_url = "https://tempmail.plus"
 
-        while account_counts < 50:
+        while db.size() < 30:
             try:
-                logging.info(get_translation("generating_random_account"))
+                logging.info("=== 生成随机信息 ===")
 
                 email_generator = EmailGenerator()
                 first_name = email_generator.default_first_name
@@ -457,17 +436,18 @@ if __name__ == "__main__":
                 account = email_generator.generate_email()
                 password = email_generator.default_password
 
-                logging.info(get_translation("generated_email_account", email=account))
+                logging.info(f"生成的邮箱账号: {email}")
 
-                logging.info(get_translation("initializing_email_verification"))
+                logging.info("正在初始化邮箱验证模块...")
                 email_handler = EmailVerificationHandler(account)
 
                 tab = browser.latest_tab
 
                 tab.run_js("try { turnstile.reset() } catch(e) { }")
 
-                logging.info(get_translation("starting_registration"))
-                logging.info(get_translation("visiting_login_page", url=login_url))
+                logging.info("\n=== 开始注册流程 ===")
+                logging.info(f'开始注册{db.size()+1}号账号')
+                logging.info(f'正在访问登录页面: {login_url}')
                 tab.get(login_url)
 
                 if sign_up_account(browser, tab):
@@ -477,23 +457,14 @@ if __name__ == "__main__":
                             email=account, 
                             account=account,
                             password=password)
-                    
-                    # # cursor登陆自动化部分
-                    # logging.info(get_translation("getting_session_token"))
-                    # token = get_cursor_session_token(tab)
-                    # if token:
-                    #     logging.info(get_translation("updating_auth_info"))
-                    #     update_cursor_auth(
-                    #         email=account, access_token=token, refresh_token=token
-                    #     )
-                    # else:
-                    #     logging.error(get_translation("session_token_failed"))
+                    time.sleep(random.randint(2, 8))
+                    logging.info('随机等待2-4秒')
 
             except Exception as e:
-                logging.error(get_translation("program_error", error=str(e)))
-                
+                logging.error(f'程序执行出现错误: {e}')
+
     except Exception as e:
-        logging.error(get_translation("iinitialize_error", error=str(e)))
+        logging.error(f'初始化失败: {e}')
     finally:
         if browser_manager:
             browser_manager.quit()

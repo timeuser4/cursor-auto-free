@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号信息</title>
+    <style>
+        body {
+            font-family: 'Yu Gothic', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: url('https://example.com/your-background.jpg'); /* 和风背景 */
+            background-size: cover;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            margin: 10px;
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .account-info {
+            margin-top: 20px;
+            background-color: #f7f7f7;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>获取账号信息</h2>
+            <button id="getAccountInfoBtn">获取账号信息</button>
+        </div>
+        <div id="accountInfo" class="account-info" style="display: none;">
+            <p><span class="info-title">名字:</span> <span id="firstname"></span></p>
+            <p><span class="info-title">姓氏:</span> <span id="lastname"></span></p>
+            <p><span class="info-title">邮箱:</span> <span id="email"></span></p>
+            <p><span class="info-title">账号:</span> <span id="account"></span></p>
+            <p><span class="info-title">密码:</span> <span id="password"></span></p>
+            <p><span class="info-title">日期:</span> <span id="date"></span></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('getAccountInfoBtn').addEventListener('click', function() {
+            fetch('/get_account_info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.firstname) {
+                        document.getElementById('firstname').innerText = data.firstname;
+                        document.getElementById('lastname').innerText = data.lastname;
+                        document.getElementById('email').innerText = data.email;
+                        document.getElementById('account').innerText = data.account;
+                        document.getElementById('password').innerText = data.password;
+                        document.getElementById('date').innerText = data.date;
+                        document.getElementById('accountInfo').style.display = 'block';
+                    } else {
+                        alert('未找到账号信息');
+                    }
+                })
+                .catch(error => {
+                    alert('请求失败，请稍后再试');
+                    console.error('Error:', error);
+                });
+        });
+    </script>
+</body>
+</html>

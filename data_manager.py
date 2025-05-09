@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime
 
+# TODO: 实现随机账号生成的时候调用查重接口
 class DatabaseManager:
     def __init__(self, db_name="accounts.db"):
         self.db_name = db_name
