@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号信息</title>
+    <style>
+        body {
+            font-family: 'Yu Gothic', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: url('https://example.com/your-background.jpg'); /* 和风背景 */
+            background-size: cover;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            margin: 10px;
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .account-info {
+            margin-top: 20px;
+            background-color: #f7f7f7;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .copy-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .copy-btn:hover {
+            background-color: #218838;
+        }
+
+        .copy-success {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        /* 添加账号两边的空格 */
+        #account {
+            padding: 0 10px;  /* 给账号前后添加10px的空间 */
+        }
+
+        /* 新增显示剩余数量的样式 */
+        .remain-counts {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 新增一个显示剩余数量的区域 -->
+        <div id="remainCounts" class="remain-counts" style="display: none;">
+            剩余账号数量: <span id="remainCount"></span>
+        </div>
+
+        <div class="card">
+            <h2>获取账号信息</h2>
+            <button id="getAccountInfoBtn">获取账号信息</button>
+        </div>
+
+        <div id="accountInfo" class="account-info" style="display: none;">
+            <div class="info-item">
+                <span class="info-title">名字:</span> <span id="firstname"></span>
+                <button class="copy-btn" id="copyFirstname" onclick="copyText('firstname', 'copyFirstname')">复制</button>
+            </div>
+            <div class="info-item">
+                <span class="info-title">姓氏:</span> <span id="lastname"></span>
+                <button class="copy-btn" id="copyLastname" onclick="copyText('lastname', 'copyLastname')">复制</button>
+            </div>
+            <div class="info-item">
+                <span class="info-title">账号:</span> <span id="account"></span>
+                <button class="copy-btn" id="copyAccount" onclick="copyText('account', 'copyAccount')">复制</button>
+            </div>
+            <div class="info-item">
+                <span class="info-title">密码:</span> <span id="password"></span>
+                <button class="copy-btn" id="copyPassword" onclick="copyText('password', 'copyPassword')">复制</button>
+            </div>
+            <div class="info-item">
+                <span class="info-title">日期:</span> <span id="date"></span>
+                <button class="copy-btn" id="copyDate" onclick="copyText('date', 'copyDate')">复制</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        const socket = io.connect('http://127.0.0.1:8080');
+    
+        // 监听连接成功事件
+        socket.on('connect', function() {
+            console.log('WebSocket 已连接');
+        });
+    
+        socket.on('remain_counts', function(data) {
+            if (!data) {
+                console.error('没有收到数据');
+                return;
+            }
+
+            console.log('接收到数据:', data);  // 打印接收到的数据
+            if (data.remaining !== undefined) {
+                document.getElementById('remainCount').innerText = data.remaining;
+                document.getElementById('remainCounts').style.display = 'block';  // 显示剩余数量
+            } else {
+                console.error('接收到的剩余数量无效');
+            }
+        });
+
+        // 获取账号信息按钮事件
+        document.getElementById('getAccountInfoBtn').addEventListener('click', function() {
+            fetch('/get_account_info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.firstname) {
+                        document.getElementById('firstname').innerText = data.firstname;
+                        document.getElementById('lastname').innerText = data.lastname;
+                        document.getElementById('account').innerText = '  ' + data.account + '  ';  // 在账号前后添加空格
+                        document.getElementById('password').innerText = data.password;
+    
+                        // 格式化日期，去掉秒的小数部分
+                        let date = new Date(data.date);
+                        let formattedDate = date.toLocaleString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        });
+                        document.getElementById('date').innerText = formattedDate;
+    
+                        document.getElementById('accountInfo').style.display = 'block';
+                    } else {
+                        console.error('未找到账号信息');
+                    }
+                })
+                .catch(error => {
+                    console.error('请求失败:', error);
+                    alert('请求失败，请稍后再试');
+                });
+        });
+    
+        // 复制功能
+        function copyText(id, btnId) {
+            var text = document.getElementById(id).innerText;
+            if (text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    // 复制成功后修改按钮文本
+                    var btn = document.getElementById(btnId);
+                    btn.innerText = '复制成功';
+                    btn.classList.add('copy-success');  // 改变按钮颜色
+                    setTimeout(() => {
+                        btn.innerText = '复制';  // 恢复原来的按钮文本
+                        btn.classList.remove('copy-success');  // 恢复按钮颜色
+                    }, 1500);  // 1.5秒后恢复原文本
+                }).catch(function(err) {
+                    console.error('复制失败:', err);
+                    // 复制失败时不做任何UI处理
+                });
+            } else {
+                console.error('没有找到要复制的内容');
+            }
+        }
+    </script>
+    
+</body>
+</html>
